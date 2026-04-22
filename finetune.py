@@ -59,9 +59,9 @@ if __name__ == "__main__":
         torch.distributed.init_process_group(backend="nccl", init_method="env://")
 
     os.environ["CUDA_VISIBLE_DEVICES"] = cfg.MODEL.DEVICE_ID
-    train_loader, train_loader_normal, train_loader_pair, test_loader, num_test, num_classes, camera_num, view_num = make_dataloader(cfg)
+    train_loader, train_loader_normal, train_loader_pair, test_loader, num_test, num_classes, num_cam, num_view = make_dataloader(cfg)
 
-    model = make_model(cfg, num_class=num_classes, camera_num=camera_num, phase='finetune')
+    model = make_model(cfg, num_class=num_classes, num_cam=num_cam, phase='finetune')
 
     loss_func, center_criterion = make_loss(cfg, num_classes=num_classes)
 

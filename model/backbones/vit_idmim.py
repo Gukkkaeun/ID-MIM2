@@ -52,6 +52,8 @@ class ViT_IDMIM(nn.Module):
         # 图像宽高嵌入 SSE
         self.wh_embed = nn.Linear(2, embed_dim)
 
+        self.embed_dim = embed_dim
+
         # Transformer blocks
         self.blocks = nn.ModuleList([
             Block(embed_dim, num_heads, mlp_ratio, qkv_bias=qkv_bias)

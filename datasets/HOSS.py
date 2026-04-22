@@ -1,7 +1,7 @@
 # encoding: utf-8
 import glob
 import os.path as osp
-from bases import BaseImageDataset
+from .bases import BaseImageDataset
 
 
 class HOSS(BaseImageDataset):

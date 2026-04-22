@@ -66,6 +66,14 @@ _C.MODEL.SSE = False
 # Pretrain with images pairs
 _C.MODEL.PAIR = False
 
+# ID-MIM 配置（修复报错）
+_C.MODEL.ID_MIM = CN()
+_C.MODEL.ID_MIM.MASK_RATIO_ID = 0.5
+_C.MODEL.ID_MIM.MASK_RATIO_NON_ID = 0.5
+_C.MODEL.ID_MIM.TAU_ID_CON = 0.5
+_C.MODEL.ID_MIM.LAMBDA_CROSS = 0.5
+_C.MODEL.ID_MIM.BETA_ORTH = 0.5
+_C.MODEL.ID_MIM.ALPHA_REG = 0.5
 # -----------------------------------------------------------------------------
 # INPUT
 # -----------------------------------------------------------------------------

@@ -61,7 +61,7 @@ if __name__ == "__main__":
     os.environ["CUDA_VISIBLE_DEVICES"] = cfg.MODEL.DEVICE_ID
     train_loader, train_loader_normal, train_loader_pair, test_loader, num_test, num_classes, num_cam, num_view = make_dataloader(cfg)
 
-    model = make_model(cfg, num_class=num_classes, camera_num=num_cam, phase='pretrain')
+    model = make_model(cfg, num_class=num_classes, num_cam=num_cam, phase='pretrain')
 
     loss_func, center_criterion = make_loss(cfg, num_classes=num_classes)
 

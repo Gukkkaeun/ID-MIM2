@@ -1,19 +1,19 @@
 import torch
 import torchvision.transforms as T
 from torch.utils.data import DataLoader
-from bases import ImageDataset
+from .bases import ImageDataset
 from timm.data.random_erasing import RandomErasing
-from sampler import RandomIdentitySampler
-from sampler_ddp import RandomIdentitySampler_DDP
+from .sampler import RandomIdentitySampler
+from .sampler_ddp import RandomIdentitySampler_DDP
 import torch.distributed as dist
 
-from HOSS import HOSS
-from CMship import CMship
-from KT_Boat import KT_Boat
+from .HOSS import HOSS
+from .CMship import CMship
+from .KT_Boat import KT_Boat
 
 import sys
 from pathlib import Path
-sys.path.append(str(Path(__file__).parent.parent))  # 自动加入项目路径
+sys.path.append(str(Path(__file__).parent.parent))
 from config import cfg
 
 
@@ -31,16 +31,19 @@ def train_collate_fn(batch):
     pids = torch.tensor(pids, dtype=torch.int64)
     viewids = torch.tensor(viewids, dtype=torch.int64)
     camids = torch.tensor(camids, dtype=torch.int64)
+    img_wh = torch.tensor(img_sizes, dtype=torch.int64)
     
-    return torch.stack(imgs, dim=0), pids, camids, viewids
+    return torch.stack(imgs, dim=0), pids, camids, viewids, img_wh
 
 
 
 def val_collate_fn(batch):
     imgs, pids, camids, viewids, img_sizes = zip(*batch)
     viewids = torch.tensor(viewids, dtype=torch.int64)
-    camids_batch = torch.tensor(camids, dtype=torch.int64)
-    return torch.stack(imgs, dim=0), pids, camids, camids_batch, viewids
+    camids = torch.tensor(camids, dtype=torch.int64)
+    img_wh = torch.tensor(img_sizes, dtype=torch.int64)
+
+    return torch.stack(imgs, dim=0), pids, camids, viewids, img_wh
 
 
 
@@ -51,7 +54,7 @@ def make_dataloader(cfg):
             T.RandomHorizontalFlip(p=cfg.INPUT.PROB),
             T.Pad(cfg.INPUT.PADDING),
             T.RandomCrop(cfg.INPUT.SIZE_TRAIN),
-            T.Grayscale(3),  # <--- 就加这一行！
+            T.Grayscale(num_output_channels=3),
             T.ToTensor(),
             T.Normalize(mean=cfg.INPUT.PIXEL_MEAN, std=cfg.INPUT.PIXEL_STD),
             RandomErasing(probability=cfg.INPUT.RE_PROB, mode="pixel", max_count=1, device="cpu"),
@@ -62,7 +65,7 @@ def make_dataloader(cfg):
     val_transforms = T.Compose(
         [
             T.Resize(cfg.INPUT.SIZE_TEST),
-            T.Grayscale(3),  # <--- 这里也加！
+            T.Grayscale(num_output_channels=3),
             T.ToTensor(),
             T.Normalize(mean=cfg.INPUT.PIXEL_MEAN, std=cfg.INPUT.PIXEL_STD)
         ]
@@ -127,7 +130,7 @@ def make_dataloader(cfg):
             train_loader_pair = DataLoader(
                 train_set_pair,
                 batch_size=cfg.SOLVER.IMS_PER_BATCH,
-                sampler=RandomIdentitySampler(dataset.train, cfg.SOLVER.IMS_PER_BATCH, cfg.DATALOADER.NUM_INSTANCE),
+                sampler=RandomIdentitySampler(dataset.train_pair, cfg.SOLVER.IMS_PER_BATCH, cfg.DATALOADER.NUM_INSTANCE),
                 num_workers=num_workers,
                 collate_fn=train_collate_fn,
             )
