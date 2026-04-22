@@ -17,7 +17,6 @@ sys.path.append(str(Path(__file__).parent.parent))  # 自动加入项目路径
 from config import cfg
 
 
-
 __factory = {
     'HOSS': HOSS,
     'CMship': CMship,
@@ -26,8 +25,8 @@ __factory = {
 
 
 def train_collate_fn(batch):
-    # 数据集返回：img, pid, camid, viewid
-    imgs, pids, camids, viewids = zip(*batch)
+    # 数据集返回：img, pid, camid, viewid, img_size
+    imgs, pids, camids, viewids, img_sizes = zip(*batch)
     
     pids = torch.tensor(pids, dtype=torch.int64)
     viewids = torch.tensor(viewids, dtype=torch.int64)
@@ -38,7 +37,7 @@ def train_collate_fn(batch):
 
 
 def val_collate_fn(batch):
-    imgs, pids, camids, viewids = zip(*batch)
+    imgs, pids, camids, viewids, img_sizes = zip(*batch)
     viewids = torch.tensor(viewids, dtype=torch.int64)
     camids_batch = torch.tensor(camids, dtype=torch.int64)
     return torch.stack(imgs, dim=0), pids, camids, camids_batch, viewids
@@ -163,7 +162,23 @@ def make_dataloader(cfg):
         raise ValueError("cfg.SOLVER.IMS_PER_BATCH should be even number")
     return train_loader, train_loader_normal, train_loader_pair, test_loader, len(dataset.test), num_classes, num_cam, num_view
 
-# if __name__ == '__main__':
-#     train_loader, train_loader_normal, train_loader_pair, test_loader, num_query, num_classes, num_cam, num_view = make_dataloader(cfg)
-#     for n_iter, (img, pid, camid, viewid) in enumerate(train_loader):
-#         print(img.shape, pid, camid, viewid)
+
+
+# 测试代码：验证加载逻辑
+if __name__ == '__main__':
+    try:
+        train_loader, train_loader_normal, train_loader_pair, test_loader, num_query, num_classes, num_cam, num_view = make_dataloader(cfg)
+        print("数据加载成功！")
+        print(f"num_query: {num_query}, num_classes: {num_classes}, num_cam: {num_cam}, num_view: {num_view}")
+        
+        # 迭代一个批次验证格式
+        for n_iter, (img, pid, camid, viewid) in enumerate(train_loader):
+            print(f"训练集批次 {n_iter}：img.shape={img.shape}, pid.shape={pid.shape}, camid.shape={camid.shape}, viewid.shape={viewid.shape}")
+            break
+        
+        for n_iter, (img, pid, camid, camids_batch, viewid) in enumerate(test_loader):
+            print(f"测试集批次 {n_iter}：img.shape={img.shape}, pid数量={len(pid)}, camid数量={len(camid)}")
+            break
+    except Exception as e:
+        print(f"加载失败：{e}")
+        raise

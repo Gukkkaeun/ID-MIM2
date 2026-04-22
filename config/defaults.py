@@ -92,7 +92,7 @@ _C.DATASETS = CN()
 # List of the dataset names for training, as present in paths_catalog.py
 _C.DATASETS.NAMES = ('CMship')
 # Root directory where datasets should be used (and downloaded if not found)
-_C.DATASETS.ROOT_DIR = ('E:\博士\科研\数据集\跨模态舰船重识别\CMshipReID')
+_C.DATASETS.ROOT_DIR = ('E:\博士\科研\数据集\跨模态舰船重识别')
 
 
 # -----------------------------------------------------------------------------
