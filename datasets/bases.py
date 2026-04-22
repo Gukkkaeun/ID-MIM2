@@ -78,22 +78,42 @@ class BaseImageDataset(BaseDataset):
 
 
 class ImageDataset(Dataset):
-    def __init__(self, dataset, transform=None):
+    def __init__(self, dataset, transform=None, pair=False):
         self.dataset = dataset
         self.transform = transform
+        self.pair = pair
 
     def __len__(self):
         return len(self.dataset)
 
-    def __getitem__(self, index):
-        img_path, pid, camid, viewid = self.dataset[index]
-        img = read_image(img_path)
-        img_size = img.size
 
+    def get_image(self, img_path):
+        if img_path.endswith("SAR.tif"):
+            img = read_image(img_path)
+            img = sar32bit2RGB(img)
+            img_size = img.size
+        else:
+            img = read_image(img_path).convert("RGB")
+            img_size = img.size
+            img_size = [img_size[0] * 0.75, img_size[1] * 0.75]
+        img_size = ((img_size[0] / 93 - 0.434) / 0.031, (img_size[1] / 427 - 0.461) / 0.031, img_size[1] / img_size[0])
         if self.transform is not None:
             img = self.transform(img)
+        return img, img_size
 
-        return img, pid, camid, viewid, img_size
+    def __getitem__(self, index):
+        if self.pair:
+            imgs = []
+            for img in self.dataset[index]:
+                img_path, pid, camid, view_id = img
+                im, img_size = self.get_image(img_path)
+                imgs.append((im, pid, camid, view_id, img_size))
+            return imgs
+        else:
+            img_path, pid, camid, viewid = self.dataset[index]
+            img, img_size = self.get_image(img_path)
+            return img, pid, camid, viewid, img_size
+        
     
 
 class SARDataset(Dataset):

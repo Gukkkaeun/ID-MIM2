@@ -15,17 +15,17 @@ def pretrain(cfg, model, train_loader_pair, optimizer, scheduler, local_rank=0):
     log_period = cfg.SOLVER.LOG_PERIOD
     checkpoint_period = cfg.SOLVER.CHECKPOINT_PERIOD
 
-    device = "cuda"
+    device = "cpu"
     epochs = cfg.SOLVER.MAX_EPOCHS
 
     logger = logging.getLogger("ID-MIM.pretrain")
     logger.info("="*50 + " Start ID-MIM Pretraining " + "="*50)
 
     if device:
-        model.to(local_rank)
+        model.to(device)
         if torch.cuda.device_count() > 1 and cfg.MODEL.DIST_TRAIN:
             print("Using {} GPUs for training".format(torch.cuda.device_count()))
-            model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[local_rank], find_unused_parameters=True)
+            model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[device], find_unused_parameters=True)
 
     loss_meter = AverageMeter()
     scaler = GradScaler('cuda')
@@ -44,10 +44,10 @@ def pretrain(cfg, model, train_loader_pair, optimizer, scheduler, local_rank=0):
         for batch_idx, (img, pid, camid, viewid, img_wh) in enumerate(train_loader_pair):
             img = img.to(device)       # [B, 3, H, W] 输入图像
             camid = camid.to(device)       # [B] 模态标签（0=optical, 1=sar）
-            pid = pid.cuda() if pid[0] != -1 else None  # 无标注时为None
+            pid = pid.to(device) if pid[0] != -1 else None  # 无标注时为None
 
             with autocast('cuda'):
-                loss_dict = model(img, camid, img_wh, phase='pretrain')
+                loss_dict = model(img, camid, pid, phase='pretrain')
                 loss_total = loss_dict['loss_total']
 
             # 反向传播 + 优化器更新

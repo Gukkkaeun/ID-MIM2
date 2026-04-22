@@ -4,7 +4,7 @@ from model import make_model
 from solver import make_optimizer
 from solver.scheduler_factory import create_scheduler
 from loss import make_loss
-from processor import pretrain
+from processor import finetune
 import random
 import torch
 import numpy as np
@@ -69,4 +69,4 @@ if __name__ == "__main__":
 
     scheduler = create_scheduler(cfg, optimizer)
 
-    pretrain(cfg, model, train_loader, optimizer, scheduler, args.local_rank)
+    finetune(cfg, model, train_loader, optimizer, scheduler, args.local_rank)
