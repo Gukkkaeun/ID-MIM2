@@ -85,6 +85,5 @@ if __name__ == '__main__':
     )
     # 打印核心信息
     print(f"训练集样本数: {len(dataset.train)}")
-    print(f"训练集成对样本数: {len(dataset.train_pair)}")
-    print(f"验证集样本数: {len(dataset.val)}")
-    print(f"测试集样本数: {len(dataset.test)}")
+    print(f"验证集样本数: {len(dataset.query)}")
+    print(f"测试集样本数: {len(dataset.gallery)}")
