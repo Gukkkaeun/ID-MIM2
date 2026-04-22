@@ -75,6 +75,16 @@ class HOSS(BaseImageDataset):
             dataset.append((img_path, self.pid_begin + pid, camid, 1))
         return dataset
     
-HOSS(root = 'E:\博士\科研\数据集\跨模态舰船重识别\HOSS')
-# from .bases import BaseImageDataset
-# '/'
+# 示例：实例化数据集（放到main中避免导入时执行）
+if __name__ == '__main__':
+    # Windows路径建议用原始字符串，Linux直接用绝对路径
+    dataset = HOSS(
+        root=r'E:\博士\科研\数据集\跨模态舰船重识别',
+        verbose=True,
+        pid_begin=0
+    )
+    # 打印核心信息
+    print(f"训练集样本数: {len(dataset.train)}")
+    print(f"训练集成对样本数: {len(dataset.train_pair)}")
+    print(f"验证集样本数: {len(dataset.val)}")
+    print(f"测试集样本数: {len(dataset.test)}")
