@@ -1,6 +1,6 @@
-2026-04-23 15:42:57,238 transreid INFO: Saving model in the path :output
-2026-04-23 15:42:57,239 transreid INFO: Namespace(config_file='', opts=[], local_rank=0)
-2026-04-23 15:42:57,239 transreid INFO: Running with config:
+2026-04-23 18:40:01,456 transreid INFO: Saving model in the path :output
+2026-04-23 18:40:01,457 transreid INFO: Namespace(config_file='', opts=[], local_rank=0)
+2026-04-23 18:40:01,458 transreid INFO: Running with config:
 DATALOADER:
   NUM_INSTANCE: 16
   NUM_WORKERS: 2
@@ -60,7 +60,7 @@ SOLVER:
   COSINE_SCALE: 30
   EVAL_PERIOD: 10
   GAMMA: 0.1
-  IMS_PER_BATCH: 28
+  IMS_PER_BATCH: 2
   LARGE_FC_LR: False
   LOG_PERIOD: 1
   MARGIN: 0.3

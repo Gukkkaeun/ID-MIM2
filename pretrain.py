@@ -58,7 +58,7 @@ if __name__ == "__main__":
     if cfg.MODEL.DIST_TRAIN:
         torch.distributed.init_process_group(backend="nccl", init_method="env://")
 
-    os.environ["CUDA_VISIBLE_DEVICES"] = cfg.MODEL.DEVICE_ID
+    os.environ["CUDA_VISIBLE_DEVICES"] = cfg.SOLVER.DEVICE
     train_loader, train_loader_normal, train_loader_pair, test_loader, num_test, num_classes, num_cam, num_view = make_dataloader(cfg)
 
     model = make_model(cfg, num_class=num_classes, num_cam=num_cam, phase='pretrain')

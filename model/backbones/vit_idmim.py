@@ -119,16 +119,3 @@ def vit_base_patch16_224_IDMIM(**kwargs):
         **kwargs
     )
     return model
-
-
-# if __name__ == "__main__":
-#     model = vit_base_patch16_224_IDMIM(camera=3)
-    
-#     # 模拟输入
-#     x = torch.randn(4, 3, 224, 224)       # 图片
-#     cam_id = torch.tensor([0,1,2,0])      # 模态
-#     img_wh = torch.randn(4, 2)            # 宽高
-    
-#     f_id, f_mod, f_noise = model(x, cam_id, img_wh)
-#     print("f_id shape:", f_id.shape)      # torch.Size([4, 768])
-#     print("模型运行成功 ✅")

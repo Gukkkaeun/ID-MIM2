@@ -15,7 +15,7 @@ def pretrain(cfg, model, train_loader_pair, optimizer, scheduler, local_rank=0):
     log_period = cfg.SOLVER.LOG_PERIOD
     checkpoint_period = cfg.SOLVER.CHECKPOINT_PERIOD
 
-    device = "cpu"
+    device = cfg.SOLVER.DEVICE
     epochs = cfg.SOLVER.MAX_EPOCHS
 
     logger = logging.getLogger("ID-MIM.pretrain")
@@ -28,8 +28,7 @@ def pretrain(cfg, model, train_loader_pair, optimizer, scheduler, local_rank=0):
             model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[device], find_unused_parameters=True)
 
     loss_meter = AverageMeter()
-    # scaler = GradScaler('cuda')
-    scaler = GradScaler(enabled=False)
+    scaler = GradScaler(device=device)
 
 
     # 开始预训练
@@ -43,15 +42,17 @@ def pretrain(cfg, model, train_loader_pair, optimizer, scheduler, local_rank=0):
                 train_loader_pair.sampler.set_epoch(epoch)
 
         for batch_idx, (img, pid, camid, viewid, img_wh) in enumerate(train_loader_pair):
+            print(batch_idx)
             img = img.to(device)       # [B, 3, H, W] 输入图像
             camid = camid.to(device)       # [B] 模态标签（0=optical, 1=sar）
             img_wh = img_wh.to(device)
             pid = pid.to(device) if pid[0] != -1 else None  # 无标注时为None
 
-            with autocast('cuda'):
-            with autocast('cpu', enabled=False):
+            with autocast(device):
                 loss_dict = model(img, pid, camid, img_wh, phase='pretrain')
                 loss_total = loss_dict['loss_total']
+
+                optimizer.zero_grad()
 
             # 反向传播 + 优化器更新
             scaler.scale(loss_total).backward()
@@ -59,8 +60,9 @@ def pretrain(cfg, model, train_loader_pair, optimizer, scheduler, local_rank=0):
             scaler.update()
 
             loss_meter.update(loss_total.item(), img.shape[0])
+            print(loss_total)
 
-            torch.cuda.synchronize()
+            # torch.cuda.synchronize()
             if (batch_idx + 1) % log_period == 0:
                 logger.info(
                     "Epoch[{}] Iteration[{}/{}] Loss: {:.3f}, Base Lr: {:.2e}".format(
@@ -91,7 +93,7 @@ def finetune(cfg, model, train_loader, optimizer, scheduler, local_rank=0):
     log_period = cfg.SOLVER.LOG_PERIOD
     checkpoint_period = cfg.SOLVER.CHECKPOINT_PERIOD
 
-    device = "cuda"
+    device = cfg.SOLVER.DEVICE
     epochs = cfg.SOLVER.MAX_EPOCHS
 
     logger = logging.getLogger("ID-MIM.finetune")
@@ -104,7 +106,7 @@ def finetune(cfg, model, train_loader, optimizer, scheduler, local_rank=0):
             model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[local_rank], find_unused_parameters=True)
 
     loss_meter = AverageMeter()
-    scaler = GradScaler('cuda')
+    scaler = GradScaler(device=device)
 
 
     # 8. 开始微调
@@ -123,9 +125,9 @@ def finetune(cfg, model, train_loader, optimizer, scheduler, local_rank=0):
         for batch_idx, (img, pid, camid, viewid, mod) in enumerate(train_loader):
             img = img.to(device)       # [B, 3, H, W] 输入图像
             mod = mod.to(device)       # [B] 模态标签（0=optical, 1=sar）
-            pid = pid.cuda() if pid[0] != -1 else None  # 无标注时为None
+            pid = pid.to(device) if pid[0] != -1 else None  # 无标注时为None
 
-            with autocast('cuda'):
+            with autocast('cpu', enabled=False):
                 loss_dict = model(img, mod, pid, phase='finetune')
                 loss_total = loss_dict['loss_total']
 

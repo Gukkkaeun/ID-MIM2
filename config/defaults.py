@@ -100,7 +100,7 @@ _C.DATASETS = CN()
 # List of the dataset names for training, as present in paths_catalog.py
 _C.DATASETS.NAMES = ('CMship')
 # Root directory where datasets should be used (and downloaded if not found)
-_C.DATASETS.ROOT_DIR = ('E:\博士\科研\数据集\跨模态舰船重识别')
+_C.DATASETS.ROOT_DIR = ('CMship')
 
 
 # -----------------------------------------------------------------------------
@@ -121,7 +121,7 @@ _C.SOLVER = CN()
 # Name of optimizer
 _C.SOLVER.OPTIMIZER_NAME = "Adam"
 # Number of max epoches
-_C.SOLVER.MAX_EPOCHS = 1
+_C.SOLVER.MAX_EPOCHS = 100
 # Base learning rate
 _C.SOLVER.BASE_LR = 3e-4
 # Whether using larger learning rate for fc layer
@@ -158,15 +158,17 @@ _C.SOLVER.COSINE_MARGIN = 0.5
 _C.SOLVER.COSINE_SCALE = 30
 
 # epoch number of saving checkpoints
-_C.SOLVER.CHECKPOINT_PERIOD = 10
+_C.SOLVER.CHECKPOINT_PERIOD = 100
 # iteration of display training log
-_C.SOLVER.LOG_PERIOD = 1
+_C.SOLVER.LOG_PERIOD = 10
 # epoch number of validation
 _C.SOLVER.EVAL_PERIOD = 10
 # Number of images per batch
 # This is global, so if we have 8 GPUs and IMS_PER_BATCH = 128, each GPU will
 # contain 16 images per batch
-_C.SOLVER.IMS_PER_BATCH = 28
+_C.SOLVER.IMS_PER_BATCH = 128
+# Device for training
+_C.SOLVER.DEVICE = "cuda"
 
 # ---------------------------------------------------------------------------- #
 # TEST
