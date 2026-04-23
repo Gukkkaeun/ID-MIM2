@@ -79,7 +79,7 @@ _C.MODEL.ID_MIM.ALPHA_REG = 0.5
 # -----------------------------------------------------------------------------
 _C.INPUT = CN()
 # Size of the image during training
-_C.INPUT.SIZE_TRAIN = [256, 128]
+_C.INPUT.SIZE_TRAIN = [224, 224]
 # Size of the image during test
 _C.INPUT.SIZE_TEST = [256, 128]
 # Random probability for image horizontal flip
@@ -121,7 +121,7 @@ _C.SOLVER = CN()
 # Name of optimizer
 _C.SOLVER.OPTIMIZER_NAME = "Adam"
 # Number of max epoches
-_C.SOLVER.MAX_EPOCHS = 100
+_C.SOLVER.MAX_EPOCHS = 1
 # Base learning rate
 _C.SOLVER.BASE_LR = 3e-4
 # Whether using larger learning rate for fc layer
@@ -160,13 +160,13 @@ _C.SOLVER.COSINE_SCALE = 30
 # epoch number of saving checkpoints
 _C.SOLVER.CHECKPOINT_PERIOD = 10
 # iteration of display training log
-_C.SOLVER.LOG_PERIOD = 100
+_C.SOLVER.LOG_PERIOD = 1
 # epoch number of validation
 _C.SOLVER.EVAL_PERIOD = 10
 # Number of images per batch
 # This is global, so if we have 8 GPUs and IMS_PER_BATCH = 128, each GPU will
 # contain 16 images per batch
-_C.SOLVER.IMS_PER_BATCH = 64
+_C.SOLVER.IMS_PER_BATCH = 28
 
 # ---------------------------------------------------------------------------- #
 # TEST
@@ -192,4 +192,4 @@ _C.TEST.EVAL = False
 # Misc options
 # ---------------------------------------------------------------------------- #
 # Path to checkpoint and saved log of trained model
-_C.OUTPUT_DIR = ""
+_C.OUTPUT_DIR = "output"

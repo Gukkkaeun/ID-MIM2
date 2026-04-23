@@ -31,7 +31,7 @@ def train_collate_fn(batch):
     pids = torch.tensor(pids, dtype=torch.int64)
     viewids = torch.tensor(viewids, dtype=torch.int64)
     camids = torch.tensor(camids, dtype=torch.int64)
-    img_wh = torch.tensor(img_sizes, dtype=torch.int64)
+    img_wh = torch.tensor(img_sizes, dtype=torch.float)
     
     return torch.stack(imgs, dim=0), pids, camids, viewids, img_wh
 
@@ -47,7 +47,7 @@ def train_pair_collate_fn(batch):
     pids = torch.tensor(pids, dtype=torch.int64)
     viewids = torch.tensor(viewids, dtype=torch.int64)
     camids = torch.tensor(camids, dtype=torch.int64)
-    img_wh = torch.tensor(img_wh, dtype=torch.int64)
+    img_wh = torch.tensor(img_wh, dtype=torch.float)
 
     return torch.stack(imgs, dim=0), pids, camids, viewids, img_wh
 
@@ -56,7 +56,7 @@ def val_collate_fn(batch):
     imgs, pids, camids, viewids, img_sizes = zip(*batch)
     viewids = torch.tensor(viewids, dtype=torch.int64)
     camids = torch.tensor(camids, dtype=torch.int64)
-    img_wh = torch.tensor(img_sizes, dtype=torch.int64)
+    img_wh = torch.tensor(img_sizes, dtype=torch.float)
 
     return torch.stack(imgs, dim=0), pids, camids, viewids, img_wh
 

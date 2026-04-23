@@ -135,22 +135,23 @@ class CrossModalReconstructor(nn.Module):
         """
         B = img.shape[0]
         # 移除CLS token
-        f_id = f_id[:, 1:, :]  # [B, N, C]
-        f_mod = f_mod[:, 1:, :] # [B, N, C]
+        f_id = f_id[:, 1:-1, :]  # [B, N, C]
+        f_mod = f_mod[:, 1:-1, :] # [B, N, C]
 
         # 掩码特征（仅保留未掩码部分）
-        f_id_masked = f_id[~mask[:, 1:]]  # [B*N_unmasked, C]
-        f_mod_masked = f_mod[~mask[:, 1:]] # [B*N_unmasked, C]
-
+        f_id_masked = f_id[~mask[:, 1:-1]]  # [B*N_unmasked, C]
+        f_mod_masked = f_mod[~mask[:, 1:-1]] # [B*N_unmasked, C]
+        
         # 模态内重建：f_id + f_mod
         f_intra = f_id_masked + f_mod_masked
         patches_intra = self.intra_recon_head(f_intra).reshape(
             -1, 3, self.patch_size, self.patch_size)
+
         # 恢复掩码位置
         recon_intra_patches = torch.zeros(
             B, self.num_patches, 3, self.patch_size, self.patch_size,
             device=patches_intra.device)
-        recon_intra_patches[~mask[:, 1:]] = patches_intra
+        recon_intra_patches[~mask[:, 1:-1]] = patches_intra
         recon_intra = self.fold_patches(recon_intra_patches)
 
         # 跨模态重建：仅用f_id
@@ -160,7 +161,7 @@ class CrossModalReconstructor(nn.Module):
         recon_cross_patches = torch.zeros(
             B, self.num_patches, 3, self.patch_size, self.patch_size,
             device=patches_cross.device)
-        recon_cross_patches[~mask[:, 1:]] = patches_cross
+        recon_cross_patches[~mask[:, 1:-1]] = patches_cross
         recon_cross = self.fold_patches(recon_cross_patches)
 
         return recon_intra, recon_cross
@@ -189,7 +190,7 @@ class IdentityConsistencyRegularizer(nn.Module):
         sim_matrix = torch.matmul(f_id_opt, f_id_sar.t()) / self.tau # [B_opt, B_sar]
 
         # InfoNCE损失
-        labels = torch.arange(len(pid), device=sim_matrix.device)
+        labels = torch.zeros(f_id_opt.size(0), device=sim_matrix.device, dtype=torch.long)
         loss_id_con = F.cross_entropy(sim_matrix, labels)
 
         # 掩码不变性约束（简化版）
@@ -235,7 +236,7 @@ class IDMIM(nn.Module):
         orth_id_noise = torch.mean((f_id.transpose(1, 2) @ f_noise)** 2)
         return orth_id_mod + orth_id_noise
 
-    def forward_pretrain(self, img, mod, pid=None):
+    def forward_pretrain(self, img, pid, camid, img_wh):
         """
         预训练前向传播
         Args:
@@ -246,14 +247,23 @@ class IDMIM(nn.Module):
             loss_dict: 损失字典
         """
         # 1. 骨干网络提取并解耦特征
-        f_id, f_mod, f_noise = self.backbone(img) # [B, N+1, C]
+        B, C, H, W = img.shape
+        # 修复：先转张量，再转 float
+        w_tensor = torch.tensor(W, dtype=torch.float32, device=img.device)
+        h_tensor = torch.tensor(H, dtype=torch.float32, device=img.device)
+        
+        # 构造正确的 img_wh: [B, 2]
+        img_wh = torch.stack([w_tensor, h_tensor]).unsqueeze(0).repeat(B, 1)
+        # -------------------------------------------
+    
+        f_id, f_mod, f_noise = self.backbone(img, camid, img_wh)
 
         # 2. 生成身份感知掩码
-        mask, ids_patches = self.id_masking(f_id, mod)
+        mask, ids_patches = self.id_masking(f_id, camid)
 
         # 3. 跨模态重建
         recon_intra, recon_cross = self.cross_modal_recon(
-            f_id, f_mod, img, mod, mask
+            f_id, f_mod, img, camid, mask
         )
 
         # 4. 计算损失
@@ -269,12 +279,13 @@ class IDMIM(nn.Module):
         loss_id_con = torch.tensor(0.0, device=img.device)
         if pid is not None and len(pid) > 0:
             # 分离光学/SAR特征
-            opt_mask = (mod == 0)
-            sar_mask = (mod == 1)
+            opt_mask = (camid == 0)
+            sar_mask = (camid == 1)
             if opt_mask.sum() > 0 and sar_mask.sum() > 0:
                 f_id_opt = f_id[opt_mask][:, 0, :] # CLS token作为全局身份特征
                 f_id_sar = f_id[sar_mask][:, 0, :]
-                loss_id_con = self.id_consistency(f_id_opt, f_id_sar, pid)
+                pid_opt = pid[opt_mask]
+                loss_id_con = self.id_consistency(f_id_opt, f_id_sar, pid_opt)
 
         # 总损失
         loss_total = loss_recon + self.beta_orth * loss_orth + self.alpha_reg * loss_id_con
@@ -288,7 +299,7 @@ class IDMIM(nn.Module):
 
         return loss_dict
 
-    def forward_finetune(self, img, mod):
+    def forward_finetune(self, img, camid):
         """
         微调前向传播（提取身份特征）
         Args:
@@ -303,7 +314,7 @@ class IDMIM(nn.Module):
         f_id_global = f_id[:, 0, :]
         return f_id_global
 
-    def forward(self, img, mod, pid = None, phase ='pretrain'):
+    def forward(self, img, pid, camid, img_wh, phase ='pretrain'):
         """
         统一前向传播
         Args:
@@ -315,8 +326,8 @@ class IDMIM(nn.Module):
             预训练：loss_dict | 微调：f_id_global
         """
         if phase == 'pretrain':
-            return self.forward_pretrain(img, mod, pid)
+            return self.forward_pretrain(img, pid, camid, img_wh)
         elif phase == 'finetune':
-            return self.forward_finetune(img, mod)
+            return self.forward_finetune(img, camid)
         else:
             raise ValueError(f"Unsupported phase: {phase}")

@@ -28,7 +28,8 @@ def pretrain(cfg, model, train_loader_pair, optimizer, scheduler, local_rank=0):
             model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[device], find_unused_parameters=True)
 
     loss_meter = AverageMeter()
-    scaler = GradScaler('cuda')
+    # scaler = GradScaler('cuda')
+    scaler = GradScaler(enabled=False)
 
 
     # 开始预训练
@@ -44,10 +45,12 @@ def pretrain(cfg, model, train_loader_pair, optimizer, scheduler, local_rank=0):
         for batch_idx, (img, pid, camid, viewid, img_wh) in enumerate(train_loader_pair):
             img = img.to(device)       # [B, 3, H, W] 输入图像
             camid = camid.to(device)       # [B] 模态标签（0=optical, 1=sar）
+            img_wh = img_wh.to(device)
             pid = pid.to(device) if pid[0] != -1 else None  # 无标注时为None
 
             with autocast('cuda'):
-                loss_dict = model(img, camid, pid, phase='pretrain')
+            with autocast('cpu', enabled=False):
+                loss_dict = model(img, pid, camid, img_wh, phase='pretrain')
                 loss_total = loss_dict['loss_total']
 
             # 反向传播 + 优化器更新
@@ -69,16 +72,17 @@ def pretrain(cfg, model, train_loader_pair, optimizer, scheduler, local_rank=0):
             end_time = time.time()
             time_per_batch = (end_time - start_time) / (batch_idx + 1)
 
-            if epoch % checkpoint_period == 0:
-                if cfg.MODEL.DIST_TRAIN:
-                    if dist.get_rank() == 0:
-                        torch.save(model.state_dict(), os.path.join(cfg.OUTPUT_DIR, cfg.MODEL.NAME + "_{}.pth".format(epoch)))
-                else:
+        if epoch % checkpoint_period == 0:
+            if cfg.MODEL.DIST_TRAIN:
+                if dist.get_rank() == 0:
                     torch.save(model.state_dict(), os.path.join(cfg.OUTPUT_DIR, cfg.MODEL.NAME + "_{}.pth".format(epoch)))
+            else:
+                torch.save(model.state_dict(), os.path.join(cfg.OUTPUT_DIR, cfg.MODEL.NAME + "_{}.pth".format(epoch)))
 
 
     # 训练结束
     logger.info("="*50 + " ID-MIM Pretraining Finished " + "="*50)
+    print("="*50 + " ID-MIM Pretraining Finished " + "="*50)
 
 
 

@@ -104,7 +104,7 @@ class ViT_IDMIM(nn.Module):
         f_id, f_mod, f_noise = self.disentangler(feat)
 
         # 只返回 CLS 特征
-        return f_id[:, 0], f_mod[:, 0], f_noise[:, 0]
+        return f_id, f_mod, f_noise
 
 
 def vit_base_patch16_224_IDMIM(**kwargs):
